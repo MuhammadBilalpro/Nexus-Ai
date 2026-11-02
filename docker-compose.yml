@@ -1,0 +1,36 @@
+# Local development stack. Runs only PostgreSQL by default; the app runs with `npm run dev`.
+# `docker compose --profile app up` also builds and runs the production image.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: nexus_dev_only
+      POSTGRES_DB: nexus_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - nexus_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus -d nexus_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    profiles: ["app"]
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://nexus:nexus_dev_only@db:5432/nexus_dev
+      AUTH_URL: http://localhost:3000
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in .env}
+      MFA_ENCRYPTION_KEY: ${MFA_ENCRYPTION_KEY:?set MFA_ENCRYPTION_KEY in .env}
+      DEMO_MODE: ${DEMO_MODE:-false}
+    ports:
+      - "3000:3000"
+
+volumes:
+  nexus_pg:

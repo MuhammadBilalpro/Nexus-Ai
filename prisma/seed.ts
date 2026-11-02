@@ -1,0 +1,329 @@
+/**
+ * Database seed.
+ *
+ * Always: roles, departments, and (if no users exist) the initial Super Admin
+ * from SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD.
+ *
+ * Only when DEMO_MODE=true: a realistic, clearly-labelled demo dataset
+ * (every row has isDemo = true). The dashboard excludes these rows whenever
+ * DEMO_MODE is off, so demo figures can never be mistaken for real ones.
+ */
+import "dotenv/config";
+import { subDays, addDays, subMonths, startOfMonth } from "date-fns";
+import { db } from "../src/server/db";
+import { env } from "../src/lib/env";
+import { hashPassword, passwordSchema } from "../src/server/auth/password";
+import {
+  RoleKey,
+  ProjectCategory,
+  ProjectStatus,
+  ProjectHealth,
+  TaskStatus,
+  TaskPriority,
+  InvoiceStatus,
+  ExpenseCategory,
+} from "../src/generated/prisma/enums";
+
+const ROLES: { key: RoleKey; name: string; description: string }[] = [
+  { key: RoleKey.SUPER_ADMIN, name: "Super Admin", description: "Full platform administration" },
+  { key: RoleKey.CEO, name: "CEO", description: "Executive access to all company data and approvals" },
+  { key: RoleKey.PROJECT_MANAGER, name: "Project Manager", description: "Manages projects, tasks and team assignments" },
+  { key: RoleKey.FINANCE_MANAGER, name: "Finance Manager", description: "Manages invoices, expenses and financial reports" },
+  { key: RoleKey.DEVELOPER, name: "Developer", description: "Works on assigned projects and tasks" },
+  { key: RoleKey.QA_ENGINEER, name: "QA Engineer", description: "Tests builds and reports defects" },
+  { key: RoleKey.VIEWER, name: "Viewer", description: "Read-only access to non-sensitive dashboards" },
+];
+
+const DEPARTMENTS = [
+  { name: "Executive", slug: "executive" },
+  { name: "Game Development", slug: "game-development" },
+  { name: "Web Development", slug: "web-development" },
+  { name: "Software Engineering", slug: "software-engineering" },
+  { name: "Design", slug: "design" },
+  { name: "Quality Assurance", slug: "qa" },
+  { name: "Finance", slug: "finance" },
+  { name: "Business Development", slug: "business-development" },
+];
+
+async function seedRolesAndDepartments(): Promise<void> {
+  for (const role of ROLES) {
+    await db.role.upsert({ where: { key: role.key }, update: { name: role.name, description: role.description }, create: role });
+  }
+  for (const dept of DEPARTMENTS) {
+    await db.department.upsert({ where: { slug: dept.slug }, update: { name: dept.name }, create: dept });
+  }
+  console.log(`✓ ${ROLES.length} roles, ${DEPARTMENTS.length} departments`);
+}
+
+async function seedAdmin(): Promise<void> {
+  const existing = await db.user.count();
+  if (existing > 0) {
+    console.log("• users already exist — skipping admin bootstrap");
+    return;
+  }
+  const email = env.SEED_ADMIN_EMAIL;
+  const password = env.SEED_ADMIN_PASSWORD;
+  if (!email || !password) {
+    console.log("• SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD not set — no admin created");
+    return;
+  }
+  const check = passwordSchema.safeParse(password);
+  if (!check.success) {
+    throw new Error(`SEED_ADMIN_PASSWORD rejected by policy: ${check.error.issues[0]?.message}`);
+  }
+  const [superAdmin, ceo] = await Promise.all([
+    db.role.findUniqueOrThrow({ where: { key: RoleKey.SUPER_ADMIN } }),
+    db.role.findUniqueOrThrow({ where: { key: RoleKey.CEO } }),
+  ]);
+  const exec = await db.department.findUniqueOrThrow({ where: { slug: "executive" } });
+  await db.user.create({
+    data: {
+      email: email.toLowerCase(),
+      name: "Chief Executive",
+      title: "CEO",
+      passwordHash: await hashPassword(password),
+      passwordChangedAt: new Date(),
+      emailVerified: new Date(),
+      departmentId: exec.id,
+      roles: { create: [{ roleId: superAdmin.id }, { roleId: ceo.id }] },
+    },
+  });
+  console.log(`✓ admin user ${email} (Super Admin + CEO)`);
+}
+
+// ───────────────────────── Demo data ─────────────────────────
+
+type DemoUser = { email: string; name: string; title: string; dept: string; role: RoleKey };
+
+const DEMO_USERS: DemoUser[] = [
+  { email: "sara.pm@demo.nexus", name: "Sara Haddad", title: "Senior Project Manager", dept: "game-development", role: RoleKey.PROJECT_MANAGER },
+  { email: "omar.pm@demo.nexus", name: "Omar Qureshi", title: "Project Manager", dept: "web-development", role: RoleKey.PROJECT_MANAGER },
+  { email: "lina.fin@demo.nexus", name: "Lina Farouk", title: "Finance Manager", dept: "finance", role: RoleKey.FINANCE_MANAGER },
+  { email: "ali.dev@demo.nexus", name: "Ali Raza", title: "Unreal Engine Developer", dept: "game-development", role: RoleKey.DEVELOPER },
+  { email: "noor.dev@demo.nexus", name: "Noor Saleh", title: "Full-Stack Developer", dept: "web-development", role: RoleKey.DEVELOPER },
+  { email: "hassan.dev@demo.nexus", name: "Hassan Malik", title: "Backend Engineer", dept: "software-engineering", role: RoleKey.DEVELOPER },
+  { email: "maya.design@demo.nexus", name: "Maya Khalil", title: "Lead Product Designer", dept: "design", role: RoleKey.DEVELOPER },
+  { email: "zain.qa@demo.nexus", name: "Zain Ahmed", title: "QA Engineer", dept: "qa", role: RoleKey.QA_ENGINEER },
+  { email: "dina.bd@demo.nexus", name: "Dina Mansour", title: "Business Development Lead", dept: "business-development", role: RoleKey.VIEWER },
+];
+
+async function seedDemo(): Promise<void> {
+  const already = await db.project.count({ where: { isDemo: true } });
+  if (already > 0) {
+    console.log("• demo data already present — skipping");
+    return;
+  }
+  const now = new Date();
+  const roles = Object.fromEntries((await db.role.findMany()).map((r) => [r.key, r.id])) as Record<RoleKey, string>;
+  const depts = Object.fromEntries((await db.department.findMany()).map((d) => [d.slug, d.id]));
+
+  // Users (no passwords — demo users cannot log in)
+  const users: Record<string, string> = {};
+  for (const u of DEMO_USERS) {
+    const created = await db.user.create({
+      data: {
+        email: u.email,
+        name: u.name,
+        title: u.title,
+        departmentId: depts[u.dept],
+        isDemo: true,
+        emailVerified: now,
+        roles: { create: [{ roleId: roles[u.role] }] },
+      },
+    });
+    users[u.email] = created.id;
+  }
+
+  // Clients
+  const clients = await Promise.all(
+    [
+      { name: "Faisal Al-Otaibi", company: "Riyadh Interactive", email: "faisal@demo.nexus" },
+      { name: "Elena Marchetti", company: "Northwind Retail", email: "elena@demo.nexus" },
+      { name: "Daniel Okoro", company: "Helios Fintech", email: "daniel@demo.nexus" },
+      { name: "Hana Yamamoto", company: "Kiro Studios", email: "hana@demo.nexus" },
+    ].map((c) => db.client.create({ data: { ...c, isDemo: true } })),
+  );
+
+  type P = {
+    name: string; slug: string; category: ProjectCategory; status: ProjectStatus; health: ProjectHealth;
+    budget: string; progress: number; start: number; deadline: number; manager: string; client: number; completedDaysAgo?: number;
+  };
+  const projectsSpec: P[] = [
+    { name: "Dune Raiders — Open World RPG", slug: "dune-raiders", category: ProjectCategory.GAME_DEVELOPMENT, status: ProjectStatus.ACTIVE, health: ProjectHealth.AT_RISK, budget: "420000.00", progress: 58, start: 210, deadline: 95, manager: "sara.pm@demo.nexus", client: 0 },
+    { name: "Northwind Commerce Platform", slug: "northwind-commerce", category: ProjectCategory.WEB_DEVELOPMENT, status: ProjectStatus.ACTIVE, health: ProjectHealth.ON_TRACK, budget: "145000.00", progress: 72, start: 120, deadline: 40, manager: "omar.pm@demo.nexus", client: 1 },
+    { name: "Helios Banking App (iOS/Android)", slug: "helios-mobile", category: ProjectCategory.MOBILE_APPLICATION, status: ProjectStatus.ACTIVE, health: ProjectHealth.DELAYED, budget: "260000.00", progress: 44, start: 180, deadline: -12, manager: "omar.pm@demo.nexus", client: 2 },
+    { name: "Kiro Puzzle Collection", slug: "kiro-puzzles", category: ProjectCategory.GAME_DEVELOPMENT, status: ProjectStatus.ACTIVE, health: ProjectHealth.ON_TRACK, budget: "88000.00", progress: 81, start: 150, deadline: 25, manager: "sara.pm@demo.nexus", client: 3 },
+    { name: "Internal Asset Pipeline Service", slug: "asset-pipeline", category: ProjectCategory.SOFTWARE_DEVELOPMENT, status: ProjectStatus.ACTIVE, health: ProjectHealth.ON_TRACK, budget: "60000.00", progress: 35, start: 45, deadline: 75, manager: "omar.pm@demo.nexus", client: 0 },
+    { name: "Helios Design System", slug: "helios-design-system", category: ProjectCategory.UI_UX_DESIGN, status: ProjectStatus.COMPLETED, health: ProjectHealth.ON_TRACK, budget: "52000.00", progress: 100, start: 160, deadline: 30, manager: "omar.pm@demo.nexus", client: 2, completedDaysAgo: 34 },
+    { name: "Riyadh Interactive Brand Portal", slug: "riyadh-portal", category: ProjectCategory.WEB_DEVELOPMENT, status: ProjectStatus.COMPLETED, health: ProjectHealth.ON_TRACK, budget: "74000.00", progress: 100, start: 300, deadline: 140, manager: "omar.pm@demo.nexus", client: 0, completedDaysAgo: 150 },
+    { name: "Northwind Loyalty Mobile", slug: "northwind-loyalty", category: ProjectCategory.MOBILE_APPLICATION, status: ProjectStatus.ON_HOLD, health: ProjectHealth.AT_RISK, budget: "110000.00", progress: 20, start: 90, deadline: 120, manager: "sara.pm@demo.nexus", client: 1 },
+    { name: "Dune Raiders — Multiplayer Prototype", slug: "dune-raiders-mp", category: ProjectCategory.GAME_DEVELOPMENT, status: ProjectStatus.PLANNING, health: ProjectHealth.ON_TRACK, budget: "150000.00", progress: 5, start: -20, deadline: 200, manager: "sara.pm@demo.nexus", client: 0 },
+  ];
+
+  const projects: Record<string, string> = {};
+  for (const p of projectsSpec) {
+    const created = await db.project.create({
+      data: {
+        name: p.name, slug: p.slug, category: p.category, status: p.status, health: p.health,
+        budget: p.budget, progress: p.progress, isDemo: true,
+        startDate: subDays(now, p.start),
+        deadline: addDays(now, p.deadline),
+        completedAt: p.completedDaysAgo ? subDays(now, p.completedDaysAgo) : null,
+        managerId: users[p.manager],
+        clientId: clients[p.client]!.id,
+        description: `Demo project: ${p.name}.`,
+      },
+    });
+    projects[p.slug] = created.id;
+  }
+
+  // Memberships
+  const membership: [string, string[]][] = [
+    ["dune-raiders", ["ali.dev@demo.nexus", "maya.design@demo.nexus", "zain.qa@demo.nexus", "hassan.dev@demo.nexus"]],
+    ["northwind-commerce", ["noor.dev@demo.nexus", "hassan.dev@demo.nexus", "maya.design@demo.nexus"]],
+    ["helios-mobile", ["noor.dev@demo.nexus", "hassan.dev@demo.nexus", "zain.qa@demo.nexus"]],
+    ["kiro-puzzles", ["ali.dev@demo.nexus", "zain.qa@demo.nexus"]],
+    ["asset-pipeline", ["hassan.dev@demo.nexus"]],
+    ["northwind-loyalty", ["noor.dev@demo.nexus"]],
+    ["dune-raiders-mp", ["ali.dev@demo.nexus"]],
+  ];
+  for (const [slug, emails] of membership) {
+    await db.projectMember.createMany({ data: emails.map((e) => ({ projectId: projects[slug]!, userId: users[e]! })) });
+  }
+
+  // Tasks — spread statuses, some overdue, some due soon
+  const taskTitles = [
+    "Implement inventory system", "Optimise shader compilation", "Fix memory leak in level streaming", "Checkout flow A/B test",
+    "Payment gateway integration", "Biometric login", "Accessibility audit", "Localisation (AR/EN)", "Crash reporting pipeline",
+    "Leaderboard backend", "Design tokens v2", "Onboarding screens", "Performance profiling", "CI pipeline hardening",
+    "Analytics events", "Push notifications", "Save-game cloud sync", "Admin dashboard filters",
+  ];
+  const assignees = Object.values(users).filter((_, i) => i >= 3 && i <= 7);
+  const taskStatuses = [TaskStatus.TODO, TaskStatus.IN_PROGRESS, TaskStatus.IN_REVIEW, TaskStatus.DONE];
+  const priorities = [TaskPriority.LOW, TaskPriority.MEDIUM, TaskPriority.HIGH, TaskPriority.CRITICAL];
+  const activeSlugs = ["dune-raiders", "northwind-commerce", "helios-mobile", "kiro-puzzles", "asset-pipeline"];
+  let t = 0;
+  for (const slug of activeSlugs) {
+    for (let i = 0; i < 7; i++) {
+      const status = taskStatuses[(t + i) % 4]!;
+      const dueOffset = ((t * 7 + i * 5) % 40) - 10; // -10..29 days
+      await db.task.create({
+        data: {
+          projectId: projects[slug]!,
+          title: taskTitles[(t + i) % taskTitles.length]!,
+          status,
+          priority: priorities[(t + i * 2) % 4]!,
+          assigneeId: assignees[(t + i) % assignees.length]!,
+          dueDate: addDays(now, dueOffset),
+          completedAt: status === TaskStatus.DONE ? subDays(now, (i % 6) + 1) : null,
+          isDemo: true,
+        },
+      });
+      t++;
+    }
+  }
+  // Give Noor a visible overload: 6 extra in-progress tasks
+  for (let i = 0; i < 6; i++) {
+    await db.task.create({
+      data: {
+        projectId: projects["helios-mobile"]!, title: `Helios hotfix #${i + 1}`, status: TaskStatus.IN_PROGRESS,
+        priority: TaskPriority.HIGH, assigneeId: users["noor.dev@demo.nexus"]!, dueDate: addDays(now, i + 2), isDemo: true,
+      },
+    });
+  }
+
+  // Invoices across the last 12 months
+  const invoiceSpec: { slug: string; client: number; amount: string; monthsAgo: number; status: InvoiceStatus }[] = [];
+  const revenueBySlug: [string, number, string][] = [
+    ["riyadh-portal", 0, "74000.00"], ["helios-design-system", 2, "52000.00"], ["northwind-commerce", 1, "145000.00"],
+    ["dune-raiders", 0, "420000.00"], ["helios-mobile", 2, "260000.00"], ["kiro-puzzles", 3, "88000.00"],
+  ];
+  let n = 1;
+  for (const [slug, client, total] of revenueBySlug) {
+    const totalNum = Number(total);
+    const instalments = 4;
+    for (let k = 0; k < instalments; k++) {
+      const monthsAgo = 11 - k * 3 - (n % 2);
+      const amount = (totalNum / instalments).toFixed(2);
+      let status: InvoiceStatus = InvoiceStatus.PAID;
+      if (slug === "dune-raiders" && k === 3) status = InvoiceStatus.SENT;
+      if (slug === "helios-mobile" && k >= 2) status = k === 2 ? InvoiceStatus.OVERDUE : InvoiceStatus.DRAFT;
+      if (slug === "kiro-puzzles" && k === 3) status = InvoiceStatus.SENT;
+      if (slug === "northwind-commerce" && k === 3) status = InvoiceStatus.OVERDUE;
+      invoiceSpec.push({ slug, client, amount, monthsAgo: Math.max(0, monthsAgo), status });
+      n++;
+    }
+  }
+  let inv = 1001;
+  for (const s of invoiceSpec) {
+    const issuedAt = addDays(startOfMonth(subMonths(now, s.monthsAgo)), 3 + (inv % 9));
+    const dueAt = addDays(issuedAt, 30);
+    await db.invoice.create({
+      data: {
+        number: `DEMO-INV-${inv++}`, projectId: projects[s.slug]!, clientId: clients[s.client]!.id,
+        amount: s.amount, status: s.status, issuedAt, dueAt,
+        paidAt: s.status === InvoiceStatus.PAID ? addDays(issuedAt, 10 + (inv % 15)) : null,
+        isDemo: true,
+      },
+    });
+  }
+
+  // Expenses: monthly salaries + variable costs for the last 12 months
+  const expenseCats = [ExpenseCategory.SOFTWARE, ExpenseCategory.INFRASTRUCTURE, ExpenseCategory.MARKETING, ExpenseCategory.CONTRACTORS, ExpenseCategory.OFFICE];
+  for (let m = 11; m >= 0; m--) {
+    const month = startOfMonth(subMonths(now, m));
+    await db.expense.create({ data: { category: ExpenseCategory.SALARIES, description: "Monthly payroll", amount: "38500.00", incurredAt: addDays(month, 25), isDemo: true } });
+    for (let c = 0; c < 3; c++) {
+      const cat = expenseCats[(m + c) % expenseCats.length]!;
+      const amount = (1800 + ((m * 37 + c * 91) % 5200)).toFixed(2);
+      const slug = activeSlugs[(m + c) % activeSlugs.length]!;
+      await db.expense.create({ data: { category: cat, description: `${cat.toLowerCase()} — ${slug}`, amount, incurredAt: addDays(month, 5 + c * 6), projectId: projects[slug]!, isDemo: true } });
+    }
+  }
+
+  // Pending client approvals
+  await db.clientApproval.createMany({
+    data: [
+      { projectId: projects["dune-raiders"]!, clientId: clients[0]!.id, title: "Milestone 3 vertical slice sign-off", requestedAt: subDays(now, 6), isDemo: true },
+      { projectId: projects["northwind-commerce"]!, clientId: clients[1]!.id, title: "Checkout redesign approval", requestedAt: subDays(now, 2), isDemo: true },
+      { projectId: projects["helios-mobile"]!, clientId: clients[2]!.id, title: "Revised timeline & change order", requestedAt: subDays(now, 11), isDemo: true },
+      { projectId: projects["kiro-puzzles"]!, clientId: clients[3]!.id, title: "Store listing assets", requestedAt: subDays(now, 1), isDemo: true },
+    ],
+  });
+
+  // Recent activity feed
+  const activity: [string, string, string, string, number][] = [
+    ["task.completed", "Zain Ahmed completed “Crash reporting pipeline”", "zain.qa@demo.nexus", "helios-mobile", 1],
+    ["invoice.overdue", "Invoice DEMO-INV-1018 for Northwind Commerce Platform is overdue", "lina.fin@demo.nexus", "northwind-commerce", 2],
+    ["project.health", "Dune Raiders moved to At Risk — milestone 3 slipping", "sara.pm@demo.nexus", "dune-raiders", 3],
+    ["approval.requested", "Checkout redesign sent to Northwind Retail for approval", "omar.pm@demo.nexus", "northwind-commerce", 5],
+    ["task.created", "Maya Khalil opened “Design tokens v2”", "maya.design@demo.nexus", "dune-raiders", 8],
+    ["project.created", "Dune Raiders — Multiplayer Prototype entered planning", "sara.pm@demo.nexus", "dune-raiders-mp", 20],
+    ["invoice.paid", "Invoice DEMO-INV-1011 paid by Kiro Studios", "lina.fin@demo.nexus", "kiro-puzzles", 26],
+    ["project.completed", "Helios Design System delivered", "omar.pm@demo.nexus", "helios-design-system", 34 * 24],
+  ];
+  for (const [type, message, actor, slug, hoursAgo] of activity) {
+    await db.activity.create({
+      data: { type, message, actorId: users[actor]!, projectId: projects[slug]!, isDemo: true, createdAt: new Date(now.getTime() - hoursAgo * 3600_000) },
+    });
+  }
+
+  console.log("✓ demo dataset (users, clients, projects, tasks, invoices, expenses, approvals, activity)");
+}
+
+async function main(): Promise<void> {
+  await seedRolesAndDepartments();
+  await seedAdmin();
+  if (env.DEMO_MODE) {
+    await seedDemo();
+  } else {
+    console.log("• DEMO_MODE is off — no demo data seeded");
+  }
+}
+
+main()
+  .catch((e: unknown) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(() => db.$disconnect());
