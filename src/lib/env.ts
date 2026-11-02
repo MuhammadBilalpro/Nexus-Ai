@@ -16,6 +16,15 @@ const base64Key32 = z.string().refine((v) => {
   }
 }, "must be a base64-encoded 32-byte key (openssl rand -base64 32)");
 
+// Hosted Postgres providers inject their own names; map them before validation.
+// Vercel Prisma Postgres: POSTGRES_URL (direct) · Neon: DATABASE_URL + DATABASE_URL_UNPOOLED.
+function alias(target: string, source: string): void {
+  // process.env stringifies assignments, so never assign undefined.
+  if (!process.env[target] && process.env[source]) process.env[target] = process.env[source];
+}
+alias("DATABASE_URL", "POSTGRES_URL");
+alias("DATABASE_URL_UNPOOLED", "POSTGRES_URL_NON_POOLING");
+
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.url(),
