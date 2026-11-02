@@ -311,11 +311,35 @@ async function seedDemo(): Promise<void> {
   console.log("✓ demo dataset (users, clients, projects, tasks, invoices, expenses, approvals, activity)");
 }
 
+/** Public demo login (DEMO_MODE only). Read-only intent: security settings are locked for demo accounts. */
+export const DEMO_LOGIN = { email: "demo@nexus.local", password: "NexusDemo-2026!" } as const;
+
+async function seedDemoLogin(): Promise<void> {
+  const ceo = await db.role.findUniqueOrThrow({ where: { key: RoleKey.CEO } });
+  const exec = await db.department.findUniqueOrThrow({ where: { slug: "executive" } });
+  await db.user.upsert({
+    where: { email: DEMO_LOGIN.email },
+    update: { passwordHash: await hashPassword(DEMO_LOGIN.password), isActive: true, mfaEnabled: false },
+    create: {
+      email: DEMO_LOGIN.email,
+      name: "Demo Executive",
+      title: "CEO (demo)",
+      passwordHash: await hashPassword(DEMO_LOGIN.password),
+      emailVerified: new Date(),
+      departmentId: exec.id,
+      isDemo: true,
+      roles: { create: [{ roleId: ceo.id }] },
+    },
+  });
+  console.log(`✓ demo login ${DEMO_LOGIN.email}`);
+}
+
 async function main(): Promise<void> {
   await seedRolesAndDepartments();
   await seedAdmin();
   if (env.DEMO_MODE) {
     await seedDemo();
+    await seedDemoLogin();
   } else {
     console.log("• DEMO_MODE is off — no demo data seeded");
   }

@@ -44,6 +44,7 @@ export interface LiveSession {
     name: string | null;
     image: string | null;
     isActive: boolean;
+    isDemo: boolean;
     mfaEnabled: boolean;
     passwordChangedAt: Date | null;
     roles: { role: { key: RoleKey } }[];
@@ -70,6 +71,7 @@ export const findLiveSession = cache(async function findLiveSession(sessionId: s
           name: true,
           image: true,
           isActive: true,
+          isDemo: true,
           mfaEnabled: true,
           passwordChangedAt: true,
           roles: { select: { role: { select: { key: true } } } },

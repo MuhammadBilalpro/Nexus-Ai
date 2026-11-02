@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Standalone output for the Docker image (Phase 6 wires the image).
-  output: "standalone",
+  // Standalone output for the Docker image; Vercel manages its own output.
+  output: process.env["VERCEL"] ? undefined : "standalone",
   // Cache Components / PPR are intentionally off in Phase 1: the dashboard is
   // per-request and authenticated, and PPR is incompatible with the nonce-based
   // CSP issued in src/proxy.ts (see docs/architecture.md).

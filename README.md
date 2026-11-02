@@ -56,6 +56,13 @@ src/proxy.ts    security headers + gate    tests/        unit & security tests
 docs/           architecture · security · api
 ```
 
+## Deploy to Vercel (free tier)
+
+1. Import the GitHub repo in Vercel (framework: Next.js, defaults are fine — `vercel-build` runs migrations and the seed).
+2. **Storage → Create → Neon (Postgres, free)** and connect it to the project: this injects `DATABASE_URL` and `DATABASE_URL_UNPOOLED`.
+3. Add environment variables: `AUTH_SECRET`, `MFA_ENCRYPTION_KEY` (both `openssl rand -base64 32`), `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD`, and `DEMO_MODE=true` for a public demo (adds the shared `demo@nexus.local` read-only login shown on the sign-in page).
+4. Deploy. Sign in as the admin and enrol MFA.
+
 ## Security
 
 Security is a non-negotiable requirement. Controls, verification and open items are documented in `docs/security.md`. Report findings privately.

@@ -10,6 +10,8 @@ export interface CurrentUser extends Principal {
   image: string | null;
   mfaEnabled: boolean;
   sessionId: string;
+  /** Shared public demo account: security settings are locked. */
+  isDemo: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     mfaEnabled: u.mfaEnabled,
     mfaVerified: u.mfaVerified,
     sessionId: u.sessionId,
+    isDemo: u.isDemo,
   };
 });
 

@@ -63,6 +63,7 @@ export interface EnrollmentState {
 export async function beginMfaEnrollmentAction(): Promise<EnrollmentState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.isDemo) return { step: "idle", error: "This is a shared demo account — security settings are locked." };
   if (user.mfaEnabled) return { step: "idle", error: "MFA is already enabled." };
 
   const { secret, uri } = await beginEnrollment(user.id, user.email);
@@ -99,6 +100,7 @@ export interface DisableMfaState {
 export async function disableMfaAction(_prev: DisableMfaState, formData: FormData): Promise<DisableMfaState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.isDemo) return { error: "This is a shared demo account — security settings are locked." };
   const password = String(formData.get("password") ?? "");
   const row = await db.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } });
   if (!row?.passwordHash || !(await verifyPassword(row.passwordHash, password))) {

@@ -19,6 +19,7 @@ const base64Key32 = z.string().refine((v) => {
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   DATABASE_URL: z.url(),
+  DATABASE_URL_UNPOOLED: z.url().optional(),
   AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 characters"),
   AUTH_URL: z.url().optional(),
   MFA_ENCRYPTION_KEY: base64Key32,

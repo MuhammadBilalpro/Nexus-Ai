@@ -15,6 +15,7 @@ const idSchema = z.string().cuid();
 export async function revokeSessionAction(formData: FormData): Promise<void> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.isDemo) return;
   const parsed = idSchema.safeParse(formData.get("sessionId"));
   if (!parsed.success) return;
   const owned = await db.session.findFirst({ where: { id: parsed.data, userId: user.id }, select: { id: true } });
@@ -30,6 +31,7 @@ export async function revokeSessionAction(formData: FormData): Promise<void> {
 export async function revokeOtherSessionsAction(): Promise<void> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.isDemo) return;
   const count = await revokeAllUserSessions(user.id, user.sessionId);
   await audit.record({ actorId: user.id, action: "auth.session_revoke_all", resourceType: "user", resourceId: user.id, metadata: { count }, ...(await requestMeta()) });
   revalidatePath("/settings/security");

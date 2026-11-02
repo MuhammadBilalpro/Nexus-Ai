@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LoginForm } from "@/features/auth/components/login-form";
 import { safeNextPath } from "@/features/auth/schemas";
+import { env } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -14,6 +15,15 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       <div className="mt-6">
         <LoginForm next={safeNext !== "/" ? safeNext : undefined} />
       </div>
+      {env.DEMO_MODE && (
+        <div className="mt-5 rounded-md border border-amber/30 bg-amber/10 px-3 py-2.5 text-xs text-fg-muted">
+          <p className="font-medium text-amber">Demo access</p>
+          <p className="mt-1">
+            Email <code className="font-mono text-fg">demo@nexus.local</code> · Password <code className="font-mono text-fg">NexusDemo-2026!</code>
+          </p>
+          <p className="mt-1 text-fg-subtle">Shared read-only executive account on demo data.</p>
+        </div>
+      )}
     </div>
   );
 }

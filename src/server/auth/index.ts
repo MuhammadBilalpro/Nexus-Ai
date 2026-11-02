@@ -122,7 +122,7 @@ export const { handlers, auth, signIn, signOut, unstable_update: updateSession }
       const live = await findLiveSession(token.sid);
       if (!live) {
         // Returning an "empty" user makes auth() consumers treat this as signed out.
-        return { ...session, user: { ...session.user, id: "", roles: [], mfaEnabled: false, mfaVerified: false, sessionId: "" } };
+        return { ...session, user: { ...session.user, id: "", roles: [], mfaEnabled: false, mfaVerified: false, sessionId: "", isDemo: false } };
       }
       session.user = {
         ...session.user,
@@ -134,6 +134,7 @@ export const { handlers, auth, signIn, signOut, unstable_update: updateSession }
         mfaEnabled: live.user.mfaEnabled,
         mfaVerified: live.mfaVerified,
         sessionId: live.id,
+        isDemo: live.user.isDemo,
       };
       return session;
     },

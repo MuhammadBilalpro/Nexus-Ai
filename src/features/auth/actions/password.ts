@@ -19,6 +19,7 @@ export interface ChangePasswordState {
 export async function changePasswordAction(_prev: ChangePasswordState, formData: FormData): Promise<ChangePasswordState> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.isDemo) return { error: "This is a shared demo account — security settings are locked." };
 
   const parsed = changePasswordSchema.safeParse({
     currentPassword: formData.get("currentPassword"),
