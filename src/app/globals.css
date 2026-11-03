@@ -1,70 +1,88 @@
 @import "tailwindcss";
 
 /* ──────────────────────────────────────────────────────────────
-   NEXUS AI design tokens
-   Dark-first glassmorphism. Every color below is referenced by
-   Tailwind utilities via @theme, so components never hard-code hex.
+   NEXUS AI design language
+   Calm, minimal, intelligent. Off-white canvas, charcoal type,
+   fine 1px borders, a single electric-blue accent reserved for AI.
+   Every color is a token; components never hard-code values.
    ────────────────────────────────────────────────────────────── */
 :root {
-  /* canvas */
-  --bg-950: #07080c;
-  --bg-900: #0b0d14;
-  --bg-850: #0f121b;
-  --bg-800: #141826;
-
-  /* glass surfaces */
-  --glass: rgba(255, 255, 255, 0.04);
-  --glass-strong: rgba(255, 255, 255, 0.07);
-  --glass-hover: rgba(255, 255, 255, 0.06);
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.14);
-
-  /* text */
-  --fg: #eef0f6;
-  --fg-muted: #a3abbf;
-  --fg-subtle: #6b7387;
-
-  /* accents */
-  --accent-blue: #5b8cff;
-  --accent-violet: #8b7bff;
-  --accent-cyan: #35c9e0;
-  --accent-emerald: #34d399;
-  --accent-amber: #f6b84b;
-  --accent-rose: #f8728a;
-
-  --ring: rgba(91, 140, 255, 0.55);
-
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f2f2f0;
+  --surface-3: #e9e9e6;
+  --line: #e6e6e2;
+  --line-strong: #d3d3cf;
+  --fg: #1a1a1a;
+  --fg-muted: #65655f;
+  --fg-subtle: #9b9b95;
+  --accent: #2f6bff;
+  --accent-strong: #1f56e6;
+  --accent-soft: #eaf0ff;
+  --accent-fg: #ffffff;
+  --success: #1f9d55;
+  --success-soft: #e7f6ee;
+  --warning: #c77d00;
+  --warning-soft: #fdf3e2;
+  --danger: #d4473f;
+  --danger-soft: #fdeaea;
+  --ring: rgba(47, 107, 255, 0.35);
+  --shadow-sm: 0 1px 2px rgba(20, 20, 20, 0.04), 0 1px 1px rgba(20, 20, 20, 0.03);
+  --shadow-md: 0 4px 16px -4px rgba(20, 20, 20, 0.08), 0 2px 6px -2px rgba(20, 20, 20, 0.05);
   --radius-xs: 6px;
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  color-scheme: light;
+}
 
-  --shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 50px -20px rgba(0, 0, 0, 0.6);
-  --shadow-glow-blue: 0 0 0 1px rgba(91, 140, 255, 0.25), 0 10px 40px -10px rgba(91, 140, 255, 0.45);
-
+:root[data-theme="dark"] {
+  --bg: #0f0f10;
+  --surface: #161617;
+  --surface-2: #1c1c1e;
+  --surface-3: #242427;
+  --line: #27272a;
+  --line-strong: #363639;
+  --fg: #ededeb;
+  --fg-muted: #9c9c97;
+  --fg-subtle: #6b6b67;
+  --accent: #5b8aff;
+  --accent-strong: #7aa0ff;
+  --accent-soft: #15213f;
+  --accent-fg: #0b0f1f;
+  --success: #3fbf78;
+  --success-soft: #11291c;
+  --warning: #e0a53a;
+  --warning-soft: #2b2110;
+  --danger: #f06b63;
+  --danger-soft: #341818;
+  --ring: rgba(91, 138, 255, 0.45);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 24px -8px rgba(0, 0, 0, 0.6);
   color-scheme: dark;
 }
 
 @theme inline {
-  --color-bg-950: var(--bg-950);
-  --color-bg-900: var(--bg-900);
-  --color-bg-850: var(--bg-850);
-  --color-bg-800: var(--bg-800);
-  --color-glass: var(--glass);
-  --color-glass-strong: var(--glass-strong);
-  --color-glass-hover: var(--glass-hover);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
   --color-fg: var(--fg);
   --color-fg-muted: var(--fg-muted);
   --color-fg-subtle: var(--fg-subtle);
-  --color-blue: var(--accent-blue);
-  --color-violet: var(--accent-violet);
-  --color-cyan: var(--accent-cyan);
-  --color-emerald: var(--accent-emerald);
-  --color-amber: var(--accent-amber);
-  --color-rose: var(--accent-rose);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --color-ring: var(--ring);
 
   --radius-xs: var(--radius-xs);
@@ -73,33 +91,33 @@
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
 
-  --shadow-glass: var(--shadow-glass);
-  --shadow-glow-blue: var(--shadow-glow-blue);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
 
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", Menlo, monospace;
 
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --animate-fade-in: fade-in 0.35s var(--ease-out-quart) both;
+  --animate-fade-up: fade-up 0.4s var(--ease-out-quart) both;
   --animate-shimmer: shimmer 1.6s linear infinite;
-  --animate-fade-up: fade-up 0.5s var(--ease-out-quart) both;
+  --animate-pulse-dot: pulse-dot 2s ease-in-out infinite;
 
-  @keyframes shimmer {
-    from {
-      background-position: -200% 0;
-    }
-    to {
-      background-position: 200% 0;
-    }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
   @keyframes fade-up {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
   }
 }
 
@@ -108,37 +126,36 @@
     border-color: var(--line);
   }
   html {
-    background: var(--bg-950);
+    background: var(--bg);
     color: var(--fg);
     font-family: var(--font-sans);
+    font-size: 15px;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01";
   }
   body {
     min-height: 100%;
-    background:
-      radial-gradient(900px 500px at 12% -10%, rgba(91, 140, 255, 0.14), transparent 60%),
-      radial-gradient(800px 500px at 90% 0%, rgba(139, 123, 255, 0.12), transparent 60%),
-      radial-gradient(700px 600px at 50% 110%, rgba(53, 201, 224, 0.08), transparent 60%),
-      var(--bg-950);
-    background-attachment: fixed;
+    background: var(--bg);
   }
   ::selection {
-    background: rgba(91, 140, 255, 0.35);
+    background: var(--accent-soft);
+    color: var(--fg);
   }
   :focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
     border-radius: var(--radius-xs);
   }
-  /* numerals align in tables and KPIs */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
+  }
   .tabular {
     font-variant-numeric: tabular-nums;
   }
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
@@ -147,28 +164,28 @@
 }
 
 @layer components {
-  .glass {
-    background: var(--glass);
+  .surface {
+    background: var(--surface);
     border: 1px solid var(--line);
-    box-shadow: var(--shadow-glass);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-  }
-  .glass-strong {
-    background: var(--glass-strong);
-    border: 1px solid var(--line-strong);
-    box-shadow: var(--shadow-glass);
-    backdrop-filter: blur(22px) saturate(150%);
-    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    border-radius: var(--radius-lg);
   }
   .skeleton {
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.09) 50%, rgba(255, 255, 255, 0.04) 75%);
+    background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
     background-size: 200% 100%;
     animation: var(--animate-shimmer);
     border-radius: var(--radius-sm);
   }
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    scrollbar-color: var(--line-strong) transparent;
+  }
+  /* AI accent marker: the only place the blue appears as a fill */
+  .ai-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--accent);
+    animation: var(--animate-pulse-dot);
   }
 }

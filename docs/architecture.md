@@ -90,6 +90,21 @@ Schema: `prisma/schema.prisma`. Highlights:
 
 Migrations are plain SQL under `prisma/migrations/*/migration.sql` and are applied with `npm run db:migrate` (`prisma migrate deploy`). The initial migration was hand-authored following Prisma's naming conventions, so a future `prisma migrate dev` produces no drift. `npm run db:migrate:sql` is an engine-free fallback that performs the same bookkeeping in `_prisma_migrations`; use it only where Prisma's schema-engine binary cannot be downloaded.
 
+## Redesign (v2) — workspaces
+
+The interface was rebuilt around an AI-native executive experience (see `docs/design-language.md` for the visual contract):
+
+| Workspace | Route | Reads | Writes |
+|---|---|---|---|
+| Executive Home | `/` | KPIs, Today's Intelligence (`server/intelligence/digest.ts`), company health score | — |
+| Assistant | `/assistant` | Deterministic intent engine (`server/assistant/engine.ts`) over records; conversations per user | Conversation/Message rows, ProposedAction rows, AgentRun rows |
+| Agents | `/agents`, `/agents/[key]` | Agent definitions, runs, pending actions | Approve/reject proposed actions, pause/resume agents |
+| Insights | `/insights` | Revenue, profitability, projects, workload, clients, rule-based opportunities | — |
+| Projects | `/projects`, `/projects/[slug]` | Board/table/timeline, milestones, tasks, team, activity | Create project/task, status changes, assignments, milestone completion (health recomputed in `features/projects/health.ts`) |
+| Automation | `/automation`, `/automation/[id]` | Workflows, steps, runs | Build/edit workflows, enable/disable, dry-run (records a WorkflowRun, no side effects) |
+
+**AI honesty model.** Phase 3 has not added an LLM yet. "Today's Intelligence" and the Assistant are a deterministic rule/intent layer that only reports figures computed by the database, and every answer carries the facts and sources it used. Proposed actions are persisted and require an explicit human decision; approval marks them for the Phase 4 execution engine rather than pretending to execute. Integrations that are not connected (GitHub, email) are labelled as such everywhere.
+
 ## Dashboard read models
 
 `src/features/dashboard/queries/overview.ts` computes every KPI from records with Prisma aggregates or grouped SQL, wrapped in React `cache()` so one request never repeats a query. Financial KPIs and the revenue chart render only for principals with `dashboard:view_financials`. Each widget streams inside its own `<Suspense>` boundary with a matching skeleton.

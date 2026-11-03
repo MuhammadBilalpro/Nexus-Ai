@@ -14,7 +14,7 @@ export function ChangePasswordForm() {
   return (
     <form action={action} className="max-w-md space-y-4" noValidate>
       {state.ok && (
-        <p role="status" className="rounded-md border border-emerald/30 bg-emerald/10 px-3 py-2 text-xs text-emerald">
+        <p role="status" className="rounded-md border border-success/30 bg-success-soft px-3 py-2 text-xs text-success">
           Password updated. {state.revoked ? `${state.revoked} other session${state.revoked === 1 ? "" : "s"} signed out.` : ""}
         </p>
       )}

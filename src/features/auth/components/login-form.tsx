@@ -19,7 +19,7 @@ export function LoginForm({ next }: { next?: string }) {
     <form action={formAction} className="space-y-5" noValidate>
       {next && <input type="hidden" name="next" value={next} />}
       {state.error && (
-        <div role="alert" className="rounded-md border border-rose/30 bg-rose/10 px-3 py-2 text-xs text-rose">
+        <div role="alert" className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger">
           {state.error}
         </div>
       )}

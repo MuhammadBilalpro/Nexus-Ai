@@ -1,12 +1,12 @@
-import { KpiSkeleton, CardSkeleton } from "@/components/ui/skeleton";
+import { StatSkeleton, CardSkeleton } from "@/components/ui/skeleton";
 
-export default function DashboardLoading() {
+export default function SectionLoading() {
   return (
     <div className="space-y-6">
-      <div className="h-8 w-56 skeleton" />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <KpiSkeleton key={i} />
+      <div className="h-7 w-64 skeleton" />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <StatSkeleton key={i} />
         ))}
       </div>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">

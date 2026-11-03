@@ -2,7 +2,9 @@
 
 Enterprise-grade, security-first operating system for a company spanning game development, web and software engineering, design and client services. A CEO opens one interface, understands the company's position, talks to specialised AI agents and approves automated operations.
 
-**Status: Phase 1 — Foundation (complete).** Design system, authentication with MFA, RBAC, audit trail, database, and the executive dashboard reading live records. See `docs/architecture.md` for the plan through Phase 6.
+**Status: Phase 1 foundation complete; v2 redesign shipped.** A calm, AI-native interface: Executive Home with *Today's Intelligence*, the NEXUS Assistant (deterministic answer engine over company records, proposed actions with human approval), an Agent workspace, Business Intelligence views, a Project workspace (board / table / timeline / detail) and an Automation Studio with a visual workflow builder. Authentication with MFA, RBAC, an immutable audit trail and a security-first architecture underneath. See `docs/architecture.md`, `docs/design-language.md` and `docs/security.md`.
+
+> The AI layer is honest by design: until the Phase 3 LLM integration, answers and insights are computed by rules over real records, every figure is traceable to its source, and nothing executes without a human decision.
 
 ## Quick start
 

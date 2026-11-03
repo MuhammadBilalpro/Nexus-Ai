@@ -68,7 +68,7 @@ export async function beginMfaEnrollmentAction(): Promise<EnrollmentState> {
 
   const { secret, uri } = await beginEnrollment(user.id, user.email);
   const { toString } = await import("qrcode");
-  const qrSvg = await toString(uri, { type: "svg", margin: 1, width: 196, color: { dark: "#e5e7eb", light: "#00000000" } });
+  const qrSvg = await toString(uri, { type: "svg", margin: 1, width: 196, color: { dark: "#1a1a1a", light: "#ffffff" } });
   await audit.record({ actorId: user.id, action: "auth.mfa_enroll_begin", resourceType: "user", resourceId: user.id, ...(await requestMeta()) });
   return { step: "pending", secret, uri, qrSvg };
 }

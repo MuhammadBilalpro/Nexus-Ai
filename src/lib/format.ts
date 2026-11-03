@@ -60,3 +60,15 @@ const ROLE_LABELS: Record<string, string> = {
 export function roleLabel(key: string): string {
   return ROLE_LABELS[key] ?? humanize(key);
 }
+
+const CATEGORY_LABELS: Record<string, string> = {
+  GAME_DEVELOPMENT: "Game development",
+  WEB_DEVELOPMENT: "Web development",
+  MOBILE_APPLICATION: "Mobile application",
+  SOFTWARE_DEVELOPMENT: "Software development",
+  UI_UX_DESIGN: "UI/UX design",
+};
+
+export function categoryLabel(key: string): string {
+  return CATEGORY_LABELS[key] ?? humanize(key);
+}

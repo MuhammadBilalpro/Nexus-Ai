@@ -17,13 +17,14 @@ const eslintConfig = defineConfig([
     // They talk to the server through Server Actions in features/**/actions and typed read models.
     files: ["src/components/**/*.{ts,tsx}", "src/features/**/components/**/*.{ts,tsx}", "src/hooks/**/*.{ts,tsx}"],
     rules: {
-      "no-restricted-imports": [
+      "@typescript-eslint/no-restricted-imports": [
         "error",
         {
+          // Types are erased at build time; only runtime imports leak server code.
           patterns: [
-            { group: ["@/server/*", "@/server/**"], message: "UI code must not import server modules. Use a Server Action or pass data as props." },
-            { group: ["@/lib/env"], message: "Environment variables are server-only." },
-            { group: ["@/generated/prisma/client"], message: "Import enums from @/generated/prisma/enums; never the client in UI code." },
+            { group: ["@/server/*", "@/server/**"], message: "UI code must not import server modules. Use a Server Action or pass data as props.", allowTypeImports: true },
+            { group: ["@/lib/env"], message: "Environment variables are server-only.", allowTypeImports: true },
+            { group: ["@/generated/prisma/client"], message: "Import enums from @/generated/prisma/enums; never the client in UI code.", allowTypeImports: true },
           ],
         },
       ],

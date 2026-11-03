@@ -39,6 +39,17 @@ Security posture, controls in place, how they were verified, and what is still o
 | Audit trail | `AuditLog` table with `BEFORE UPDATE/DELETE` triggers that raise — verified in tests and via psql |
 | Demo data | Rows flagged `isDemo`, excluded unless `DEMO_MODE=true`; persistent banner in demo mode |
 
+## Redesign (v2) additions
+
+| Area | Control |
+|---|---|
+| Assistant | Deterministic intent engine — no LLM, no fabricated figures; every answer lists facts and sources. Conversations are scoped by `userId` on every query (IDOR). Asks are rate-limited (60 / 10 min per user) and audited (`assistant.ask`). Financial intents are refused for principals without `dashboard:view_financials`. |
+| Agents | Agents never execute side effects. `ProposedAction` rows require an explicit human decision (`approval:decide`, audited as `agent.action_decided`); approval marks them for the Phase 4 engine. Pausing/resuming agents needs `agent:manage` (MFA-required). Unconnected integrations (GitHub, email) are shown as "Not connected", never simulated. |
+| Projects | All mutations are Server Actions with Zod `.strict()` input, `requirePermissionStrict` (`project:create|update|assign`, `task:create|update`), audit records and Activity rows. Health/progress are recomputed server-side after each mutation. |
+| Automation | Building/toggling workflows needs `automation:manage` (MFA-required). "Dry run" validates the chain and records a `WorkflowRun` only — no notifications, emails or tasks are produced until the Phase 4 engine ships. Step reordering runs in a transaction to keep `(workflowId, order)` unique. |
+| Theme | The theme bootstrap is the only inline script; it carries the per-request CSP nonce. |
+| Demo account | `demo@nexus.local` (DEMO_MODE only) may use every workspace, but password, MFA and session controls are locked for it. |
+
 ## Infrastructure
 
 - Least-privilege DB role (`nexus`) owns only the application database.

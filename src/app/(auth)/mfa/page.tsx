@@ -13,7 +13,7 @@ export default async function MfaPage({ searchParams }: { searchParams: Promise<
   const { next } = await searchParams;
   const safeNext = safeNextPath(next);
   return (
-    <div className="glass-strong rounded-xl p-7">
+    <div className="surface p-7">
       <h1 className="text-xl font-semibold tracking-tight">Two-factor verification</h1>
       <p className="mt-1 text-sm text-fg-muted">Signed in as <span className="text-fg">{user.email}</span>. One more step to continue.</p>
       <div className="mt-6">
